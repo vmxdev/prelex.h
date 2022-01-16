@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #define PRELEX_ARITY     256
 #define PRELEX_UNDEFINED (-1)
@@ -24,6 +25,18 @@ struct prelex
 	struct prelex_node *nodes;
 	int n;
 };
+
+/* implementation */
+
+#define PRELEX_NODE_NEXT_CT(P, CLASS, NODE, NEXT)             \
+do {                                                          \
+	int __i;                                              \
+	for (__i=0; __i<PRELEX_ARITY; __i++) {                \
+		if (CLASS(__i)) {                             \
+			prelex_node_next(P, __i, NODE, NEXT); \
+		}                                             \
+	}                                                     \
+} while (0)
 
 static void
 prelex_node_init(struct prelex_node *n, int next)
@@ -137,6 +150,7 @@ prelex_parse(prelex *p, int *state, const char *text, size_t size, void *user)
 	}
 	return 1;
 }
+
 
 #endif
 
