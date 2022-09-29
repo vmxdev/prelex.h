@@ -10,7 +10,7 @@
 #define PRELEX_ANY       (-1)
 
 typedef struct prelex prelex;
-typedef int prelex_callback(prelex *p, int c, int from, int to, void *user);
+typedef int prelex_callback(prelex *p, int c, void *user);
 
 struct prelex_node
 {
@@ -27,7 +27,7 @@ struct prelex
 };
 
 /* implementation */
-
+/* FIXME: generate unique index name instead of __i */
 #define PRELEX_NODE_NEXT_CT(P, CLASS, NODE, NEXT)             \
 do {                                                          \
 	int __i;                                              \
@@ -97,8 +97,14 @@ prelex_node_next(prelex *p, int c, int node, int next)
 	}
 
 	if (c == PRELEX_ANY) {
-		/* special case, fill all the subnodes */
-		prelex_node_init(&p->nodes[node], next);
+		/* special case, replace all undefined entries */
+		int i;
+
+		for (i=0; i<PRELEX_ARITY; i++) {
+			if (p->nodes[node].next[i] == PRELEX_UNDEFINED) {
+				p->nodes[node].next[i] = next;
+			}
+		}
 		return 1;
 	}
 
@@ -137,8 +143,7 @@ prelex_parse(prelex *p, int *state, const char *text, size_t size, void *user)
 		if (p->nodes[next_node].cb) {
 			int rc;
 
-			rc = p->nodes[next_node].cb(p, c, *state, next_node,
-				user);
+			rc = p->nodes[next_node].cb(p, c, user);
 
 			if (!rc) {
 				/* callback returned 0, stop parsing */
